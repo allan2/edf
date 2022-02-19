@@ -1,10 +1,10 @@
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-
 use crate::error::{Error, ErrorKind, HeaderError, Result};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime};
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::result;
 
 pub struct Reader;
 
@@ -78,7 +78,7 @@ impl Reader {
 		let mut buffer = [0; 8];
 		f.read_exact(&mut buffer)?;
 		let s = String::from_utf8(buffer.to_vec())?;
-		let date = NaiveDate::parse_from_str(&s, "%d.%m.%y").expect("Invalid start date");
+		let date = Reader::parse_start_date(s).expect("Invalid start time");
 		Ok(date)
 	}
 
@@ -98,6 +98,19 @@ impl Reader {
 		let s = String::from_utf8(buffer.to_vec())?;
 		let n = s.trim_end().parse().expect("Could not parse header size");
 		Ok(n)
+	}
+
+	// Parse the start date from a string.
+	fn parse_start_date(s: String) -> result::Result<NaiveDate, chrono::ParseError> {
+		let date = NaiveDate::parse_from_str(&s, "%d.%m.%y")?;
+		// The spec specifies a clipping date of 1985.
+		let date = if date.year() < 1985 {
+			date.with_year(date.year() + 100)
+		} else {
+			Some(date)
+		}
+		.unwrap();
+		Ok(date)
 	}
 
 	/// Reads the reserved block.
@@ -226,5 +239,49 @@ impl fmt::Display for Header {
 			self.duration,
 			self.signals_len
 		)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use chrono::NaiveDate;
+
+	use super::Reader;
+
+	// Check that month and date are in the right order.
+	#[test]
+	fn parse_start_date_simple() {
+		let s = String::from("31.01.01");
+		assert_eq!(
+			Reader::parse_start_date(s),
+			Ok(NaiveDate::from_ymd(2001, 1, 31))
+		);
+	}
+
+	#[test]
+	fn parse_start_date_y2k() {
+		let s = String::from("01.01.00");
+		assert_eq!(
+			Reader::parse_start_date(s),
+			Ok(NaiveDate::from_ymd(2000, 1, 1))
+		);
+	}
+
+	#[test]
+	fn parse_start_date_before_clip() {
+		let s = String::from("01.01.85");
+		assert_eq!(
+			Reader::parse_start_date(s),
+			Ok(NaiveDate::from_ymd(1985, 1, 1))
+		);
+	}
+
+	#[test]
+	fn parse_start_date_after_clip() {
+		let s = String::from("31.12.84");
+		assert_eq!(
+			Reader::parse_start_date(s),
+			Ok(NaiveDate::from_ymd(2084, 12, 31))
+		);
 	}
 }
