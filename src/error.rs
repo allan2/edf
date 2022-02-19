@@ -1,4 +1,11 @@
-use std::{error::Error as StdError, fmt, io, result, str};
+use std::error::Error as StdError;
+use std::fmt;
+use std::io;
+use std::result;
+use std::str;
+use std::string;
+
+use chrono::ParseError;
 
 /// A type alias for `Result<T, edf::Error>`
 pub type Result<T> = result::Result<T, Error>;
@@ -35,6 +42,12 @@ impl From<str::Utf8Error> for Error {
 	}
 }
 
+impl From<string::FromUtf8Error> for Error {
+	fn from(err: string::FromUtf8Error) -> Error {
+		Error::new(ErrorKind::Utf8(err.utf8_error()))
+	}
+}
+
 impl StdError for Error {}
 
 impl fmt::Display for Error {
@@ -50,7 +63,7 @@ impl fmt::Display for Error {
 /// An error that occured while reading the header.
 #[derive(Debug)]
 pub enum HeaderError {
-	InvalidVersion,
+	Version,
 }
 
 impl StdError for HeaderError {}
