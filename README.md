@@ -1,7 +1,7 @@
 # edf
 
-[![crates.io](https://img.shields.io/crates/v/tack.svg)](https://crates.io/crates/tack)
-[![Released API docs](https://docs.rs/tack/badge.svg)](https://docs.rs/tack)
+[![crates.io](https://img.shields.io/crates/v/edf.svg)](https://crates.io/crates/edf)
+[![Released API docs](https://docs.rs/edf/badge.svg)](https://docs.rs/edf)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 A parser for the EDF files for Rust, with support for Serde.
